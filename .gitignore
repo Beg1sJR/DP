@@ -1,0 +1,4 @@
+gptproject4-1/backend/data/GeoLite2-City.mmdb
+gptproject4-1/logs_faiss.index
+*.mmdb
+*.index

@@ -1,0 +1,30 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+
+:root {
+  --bg: #ffffff;
+  --fg: #000000;
+}
+
+.dark {
+  --bg: #0f0f1c;
+  --fg: #ffffff;
+}
+
+.dark-blue {
+  --bg: #0a192f;
+  --fg: #e0f2ff;
+}
