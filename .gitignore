@@ -5,3 +5,4 @@ gptproject4-1/logs_faiss.index
 gptproject4-1/datasets/Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv
 gptproject4-1/datasets/02-14-2018.csv
 *.csv
+*.env
