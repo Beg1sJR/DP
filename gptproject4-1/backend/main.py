@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from backend.core.config import custom_openapi
 from backend.database import engine
@@ -72,3 +72,10 @@ async def test_ws(websocket):
     await websocket.accept()
     await websocket.send_text("WS OK")
     await websocket.close()
+
+
+@app.post("/logs/from-agent")
+async def logs_from_agent(request: Request):
+    data = await request.json()
+    print("GOT LOG:", data)
+    return {"ok": True}

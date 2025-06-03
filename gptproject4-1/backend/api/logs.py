@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import datetime
@@ -7,7 +7,7 @@ import geoip2.database
 
 from backend import schemas
 from backend.database import get_db
-from backend.models import LogAnalysis
+from backend.models import LogAnalysis, User
 from backend.schemas import LogCreate, LogAnalysisOut
 from backend.core.security import get_current_user, check_role
 from backend.securitygpt import (
@@ -17,8 +17,8 @@ from backend.securitygpt import (
     ALERT_THRESHOLD
 )
 from backend.utils.log_utils import get_recent_logs
-from backend.utils.ws_manager import notify_dashboard_update, notify_analytics_update
-from backend.utils.ws_manager import notify_threats_update
+from backend.utils.ws_manager import notify_dashboard_update, notify_analytics_update, notify_threats_update
+
 router = APIRouter(prefix="/logs", tags=["Logs"])
 
 
@@ -33,17 +33,14 @@ def find_severity(text, keywords):
             return level
     return None
 
-@router.post("", response_model=LogAnalysisOut)
-def create_log(
-    log: LogCreate,
+def process_log(
+    log_text: str,
+    db: Session,
+    user,
     background_tasks: BackgroundTasks,
-    db: Session = Depends(get_db),
-    user = Depends(get_current_user)
+    source: str = "agent"
 ):
-    check_role(user, ["ADMIN", "ANALYST"])
-
-    log_text = log.log_text
-    ip = extract_ip_from_text(log.log_text)
+    ip = extract_ip_from_text(log_text)
 
     # --- GPT анализ ---
     gpt_response = analyze_log_with_gpt(log_text)
@@ -69,7 +66,7 @@ def create_log(
     new_analysis = LogAnalysis(
         ip=ip,
         log_text=log_text,
-        source=log.source,
+        source=source,
         attack_type=parsed["attack_type"],
         mitre_id=parsed["mitre_id"],
         probability=parsed["probability"],
@@ -91,12 +88,7 @@ def create_log(
             tg_msg = (
                 f"🚨 Обнаружена угроза!\n"
                 f"Вероятность: {probability}%\n"
-                # f"Атака: {parsed.get('attack_type', '-')}\n"
                 f"MITRE ID: {parsed.get('mitre_id', '-')}\n"
-                # f"IP: {ip}\n"
-                # f"Страна: {country}, Город: {city}\n"
-                # f"Рекомендация: {parsed.get('recommendation', '-')}\n"
-                # f"Текст лога: {log_text[:500]}"
             )
             notify_telegram(tg_msg)
     except Exception as e:
@@ -110,10 +102,43 @@ def create_log(
     return new_analysis
 
 
+@router.post("", response_model=LogAnalysisOut)
+def create_log(
+    log: LogCreate,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    user = Depends(get_current_user)
+):
+    check_role(user, ["ADMIN", "ANALYST"])
+    return process_log(log.log_text, db, user, background_tasks, log.source)
+
+
+@router.post("/from-agent")
+async def logs_from_agent(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
+    logs = await request.json()
+    if isinstance(logs, dict):
+        logs = [logs]
+    results = []
+    for log in logs:
+        company_id = log.get("company_id")
+        if not company_id:
+            continue
+        system_user = db.query(User).filter_by(company_id=company_id).first()
+        if not system_user:
+            continue
+        log_text = f"{log.get('level','')} {log.get('message','')} ip:{log.get('ip','')}"
+        res = process_log(log_text, db, system_user, background_tasks, source="agent")
+        results.append(res.id)
+    return {"ok": True, "ids": results}
+
+
 @router.get("/analyzed", response_model=List[LogAnalysisOut])
 def get_analyzed_logs(
     skip: int = 0,
-    # limit: int = 10,
     db: Session = Depends(get_db),
     user = Depends(get_current_user)
 ):
@@ -123,7 +148,6 @@ def get_analyzed_logs(
         .filter_by(company_id=user.company_id)
         .order_by(LogAnalysis.id.desc())
         .offset(skip)
-        # .limit(limit)
         .all()
     )
 

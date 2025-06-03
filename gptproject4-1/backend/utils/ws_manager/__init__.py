@@ -77,13 +77,13 @@ async def notify_dashboard_update(company_id: str):
 
         print("recent_logs types:", [type(log) for log in recent_logs])
 
-        for log in recent_logs:
-            try:
-                log_dict = LogAnalysisOut.from_orm(log).dict()
-                for k, v in log_dict.items():
-                    print(f"{k}: {type(v)}")
-            except Exception as e:
-                print("Ошибка при сериализации лога:", e)
+        # for log in recent_logs:
+        #     try:
+        #         log_dict = LogAnalysisOut.from_orm(log).dict()
+        #         # for k, v in log_dict.items():
+        #             # print(f"{k}: {type(v)}")
+        #     except Exception as e:
+        #         print("Ошибка при сериализации лога:", e)
 
         if not isinstance(stats, dict):
             try:
