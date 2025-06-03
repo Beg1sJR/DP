@@ -16,6 +16,12 @@ load_dotenv()
 
 client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 model = SentenceTransformer("all-MiniLM-L6-v2")
+
+with open("logs_faiss.index", "rb") as f:
+    head = f.read(100)
+    print("First 100 bytes of logs_faiss.index:", head)
+
+
 index = faiss.read_index("logs_faiss.index")
 ids = np.load("log_ids.npy")
 

@@ -1,11 +1,11 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from backend.core.config import custom_openapi
-from backend.database import engine
-from backend.models import Base
+from core.config import custom_openapi
+from database import engine
+from models import Base
 
 # 📦 Импортируем роутеры
-from backend.api import (
+from api import (
     auth,
     logs,
     forecast,
