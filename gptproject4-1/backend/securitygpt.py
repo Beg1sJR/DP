@@ -1,29 +1,60 @@
+import gdown
 import openai
 import faiss
 import numpy as np
 import sqlite3
 import re
-from sentence_transformers import SentenceTransformer
+
 import requests
+from sentence_transformers import SentenceTransformer
 from sqlalchemy.orm import Session
 from backend.database import SessionLocal
 from backend.models import LogAnalysis
 import os
 from dotenv import load_dotenv
-import re
+from collections import Counter
+import json
 
 load_dotenv()
 
-client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+# Настройки и переменные
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+ALERT_THRESHOLD = 70  # процент вероятности
+
+# Пути к файлам
+INDEX_PATH = os.path.join(os.path.dirname(__file__), "logs_faiss.index")
+IDS_PATH = os.path.join(os.path.dirname(__file__), "log_ids.npy")
+DRIVE_FILE_ID = os.getenv("FAISS_INDEX_ID")  # ID файла на Google Drive (если используешь автоскачивание)
+
+# INDEX_PATH = os.path.join(os.path.dirname(__file__), "logs_faiss.index")
+FILE_ID = "1THFPYvsGfgxbSQvNc8SMYh0CtsWpBnBo"
+
+if not os.path.exists(INDEX_PATH):
+    print("Файл индекса не найден, скачиваем из Google Drive...")
+    gdown.download(f"https://drive.google.com/uc?id={FILE_ID}", INDEX_PATH, quiet=False)
+    # Проверим, что скачан бинарник, а не html:
+    with open(INDEX_PATH, "rb") as f:
+        head = f.read(100)
+        print("First 100 bytes:", head)
+# Проверяем наличие ID-файла
+if not os.path.exists(IDS_PATH):
+    print(f"❌ Не найден файл: {IDS_PATH}. Проверь, что log_ids.npy лежит рядом с logs_faiss.index!")
+    raise FileNotFoundError(f"{IDS_PATH} not found")
+
+# Инициализация клиентов
+client = openai.OpenAI(api_key=OPENAI_API_KEY)
 model = SentenceTransformer("all-MiniLM-L6-v2")
 
-with open("logs_faiss.index", "rb") as f:
+# Отладка: покажем первые байты индекса
+with open(INDEX_PATH, "rb") as f:
     head = f.read(100)
     print("First 100 bytes of logs_faiss.index:", head)
 
-
-index = faiss.read_index("logs_faiss.index")
-ids = np.load("log_ids.npy")
+# Загрузка FAISS индекса и ID
+index = faiss.read_index(INDEX_PATH)
+ids = np.load(IDS_PATH)
 
 def get_similar_logs_pg(input_text: str, top_k: int = 3):
     query_vec = model.encode([input_text])
@@ -71,8 +102,6 @@ MITRE: ...
 def analyze_log_with_gpt(input_log: str) -> str:
     try:
         similar_logs = get_similar_logs_pg(input_log)
-        context = ""
-
         if similar_logs:
             context = "\n\n".join([
                 f"Пример:\nЛог: {e['log']}\nТип: {e['type']}\nMITRE: {e['mitre']}\nРекомендации: {e['recommendation']}"
@@ -116,10 +145,6 @@ MITRE: T1078
 Вероятность: 55%
 Рекомендации: Проверьте IP и заблокируйте источник при повторении."""
 
-
-
-
-
 def parse_gpt_response(response_text: str) -> dict:
     # Значения по умолчанию
     attack_type = "Подозрительная активность"
@@ -156,16 +181,7 @@ def parse_gpt_response(response_text: str) -> dict:
         "recommendation": recommendation
     }
 
-
-
-
 def forecast_attack_with_gpt(logs_text: str) -> dict | None:
-    from openai import OpenAI
-    import json
-    import os
-
-    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-
     prompt = f"""
 Ты — эксперт по кибербезопасности. Вот последние логи:
 
@@ -213,8 +229,6 @@ def forecast_attack_with_gpt(logs_text: str) -> dict | None:
     except Exception as e:
         print("❌ Ошибка при запросе к GPT:", str(e))
         return None
-
-from collections import Counter
 
 def generate_report_summary(logs: list[LogAnalysis]) -> str:
     if not logs:
@@ -292,19 +306,14 @@ def explain_log_with_gpt(log_text: str) -> str:
 3. Рекомендации
 """
 
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
         max_tokens=500
     )
 
-    return response.choices[0].message["content"]
-
-
-TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
-ALERT_THRESHOLD = 70  # процент вероятности
+    return response.choices[0].message.content.strip()
 
 def notify_telegram(message):
     if not TELEGRAM_BOT_TOKEN or not TELEGRAM_CHAT_ID:
