@@ -1,7 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-DATABASE_URL = "postgresql://postgres:postgres@localhost/cyber_ai_db"
+DATABASE_URL = "postgresql://postgres:NEBHQVEvrEfUXoCWxcrnLTlxDnUCpZqz@postgres.railway.internal:5432/railway"
 
 engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
