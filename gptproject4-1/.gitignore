@@ -1,1 +1,2 @@
 *.env
+backend/logs_faiss.index

@@ -1,11 +1,13 @@
+import os
+import requests
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from core.config import custom_openapi
-from database import engine
-from models import Base
+from backend.core.config import custom_openapi
+from backend.database import engine
+from backend.models import Base
 
 # 📦 Импортируем роутеры
-from api import (
+from backend.api import (
     auth,
     logs,
     forecast,
@@ -24,6 +26,25 @@ from api import (
     system
 )
 
+
+INDEX_PATH = "backend/logs_faiss.index"
+DRIVE_FILE_ID = os.getenv("FAISS_INDEX_ID")
+
+def download_index_from_gdrive(file_id, dest_path):
+    url = f"https://drive.google.com/uc?export=download&id={file_id}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        with open(dest_path, "wb") as f:
+            f.write(response.content)
+        print("Индекс успешно скачан с Google Drive!")
+    else:
+        print("Ошибка скачивания индекса с Google Drive:", response.status_code)
+
+if not os.path.exists(INDEX_PATH):
+    print("Файл индекса не найден, скачиваем...")
+    download_index_from_gdrive(DRIVE_FILE_ID, INDEX_PATH)
+else:
+    print("Файл индекса уже есть локально.")
 
 Base.metadata.create_all(bind=engine)
 
