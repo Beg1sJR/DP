@@ -8,6 +8,7 @@ from backend.utils.companies_utils import get_user_count_for_company
 from backend.utils.log_utils import get_recent_logs
 from backend.database import SessionLocal  # Импортируй фабрику сессий
 import json
+import traceback
 
 active_connections = {}
 
@@ -117,6 +118,7 @@ async def notify_dashboard_update(company_id: str):
                 await ws.send_text(message)
             except Exception as e:
                 print("Ошибка при отправке ws:", e)
+                traceback.print_exc()  # Эта строка покажет полный stack trace ошибки
                 remove_connection(company_id, ws)  # удаляем мёртвые соединения
     finally:
         db.close()
