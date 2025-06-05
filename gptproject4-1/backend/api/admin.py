@@ -73,26 +73,6 @@ def get_users_by_company(
     return db.query(User).filter_by(company_id=user.company_id).all()
 
 
-@router.get("/logs-count")
-def get_logs_count(
-    db: Session = Depends(get_db),
-    user: User = Depends(get_current_user)
-):
-    if user.role != UserRole.ADMIN:
-        raise HTTPException(status_code=403, detail="Недостаточно прав")
-
-    total_logs = db.query(LogAnalysis).filter_by(company_id=user.company_id).count()
-    analyzed_logs = (
-        db.query(LogAnalysis)
-        .filter(LogAnalysis.company_id == user.company_id)
-        .filter(LogAnalysis.attack_type != "Нет атаки")
-        .count()
-    )
-
-    return {
-        "total_logs": total_logs,
-        "analyzed_logs": analyzed_logs
-    }
 
 
 @router.delete("/users/{user_id}")

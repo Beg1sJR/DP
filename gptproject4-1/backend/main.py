@@ -94,9 +94,3 @@ async def test_ws(websocket):
     await websocket.send_text("WS OK")
     await websocket.close()
 
-
-@app.post("/logs/from-agent")
-async def logs_from_agent(request: Request):
-    data = await request.json()
-    print("GOT LOG:", data)
-    return {"ok": True}
