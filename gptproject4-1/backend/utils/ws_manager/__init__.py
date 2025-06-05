@@ -117,7 +117,7 @@ async def notify_dashboard_update(company_id: str):
             try:
                 await ws.send_text(message)
             except Exception as e:
-                print("Ошибка при отправке ws:", e)
+                print("Ошибка при  отправке ws:", e)
                 traceback.print_exc()  # Эта строка покажет полный stack trace ошибки
                 remove_connection(company_id, ws)  # удаляем мёртвые соединения
     finally:
