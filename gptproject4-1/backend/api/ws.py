@@ -1,23 +1,19 @@
 import asyncio
 
-from fastapi import APIRouter, WebSocket, Depends, WebSocketDisconnect
-from sqlalchemy.orm import Session
-from backend.database import get_db
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 from backend.core.security_ws import get_current_user_ws
-from backend.utils.ws_manager import add_connection, remove_connection, add_analytics_connection, \
-    remove_analytics_connection
-
-from backend.utils.ws_manager import  add_threats_connection, remove_threats_connection
+from backend.utils.ws_manager import (
+    add_connection, remove_connection,
+    add_analytics_connection, remove_analytics_connection,
+    add_threats_connection, remove_threats_connection
+)
 
 router = APIRouter(prefix="/ws", tags=["WebSocket"])
 
 @router.websocket("/dashboard")
-async def dashboard_ws(
-    websocket: WebSocket,
-    db: Session = Depends(get_db),
-    user = Depends(get_current_user_ws)
-):
+async def dashboard_ws(websocket: WebSocket):
     print("WS ENDPOINT CALLED")
+    user = await get_current_user_ws(websocket)
     company_id = user.company_id
     await websocket.accept()
     add_connection(company_id, websocket)
@@ -29,11 +25,8 @@ async def dashboard_ws(
         remove_connection(company_id, websocket)
 
 @router.websocket("/threats")
-async def ws_threats(
-    websocket: WebSocket,
-    db: Session = Depends(get_db),
-    user = Depends(get_current_user_ws)
-):
+async def ws_threats(websocket: WebSocket):
+    user = await get_current_user_ws(websocket)
     print("ws_threats called, company_id:", user.company_id, "user:", user)
 
     await websocket.accept()
@@ -49,11 +42,8 @@ async def ws_threats(
         remove_threats_connection(company_id, websocket)
 
 @router.websocket("/analytics")
-async def analytics_ws(
-    websocket: WebSocket,
-    db: Session = Depends(get_db),
-    user = Depends(get_current_user_ws)
-):
+async def analytics_ws(websocket: WebSocket):
+    user = await get_current_user_ws(websocket)
     print("analytics_ws called, company_id:", user.company_id, "user:", user)
     await websocket.accept()
     company_id = user.company_id
