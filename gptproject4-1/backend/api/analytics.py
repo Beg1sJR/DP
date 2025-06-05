@@ -66,9 +66,9 @@ def get_summary(
 
     for log in logs:
         p = log.probability
-        if p < 0.3:
+        if p < 30:
             risks["low"] += 1
-        elif p < 0.7:
+        elif p < 70:
             risks["medium"] += 1
         else:
             risks["high"] += 1
