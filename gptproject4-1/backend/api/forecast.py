@@ -63,8 +63,6 @@ def get_last_forecast(
         .first()
     )
 
-    if not forecast:
-        raise HTTPException(404, detail="Нет прогнозов")
 
     return forecast
 
