@@ -201,4 +201,8 @@ return (
 </main>
 )
 } 
-export default withAuth(SuperAdminCompanyDashboard, ["SUPER_ADMIN"])
+const ProtectedSuperAdminDashboardPanel = withAuth(SuperAdminCompanyDashboard, ["SUPER_ADMIN"]);
+
+export default function Page() {
+  return <ProtectedSuperAdminDashboardPanel />;
+}

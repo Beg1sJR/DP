@@ -234,4 +234,8 @@ function ForecastHistoryPage() {
   )
 }
 
-export default withAuth(ForecastHistoryPage, ["ANALYST", "VIEWER", "ADMIN"])
+const ProtectedForecastHistoryPanel = withAuth(ForecastHistoryPage, ["ADMIN", "ANALYST"]);
+
+export default function Page() {
+  return <ProtectedForecastHistoryPanel />;
+}

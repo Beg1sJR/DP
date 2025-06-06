@@ -1072,4 +1072,8 @@ function AnalyticsPage() {
   )
 }
 
-export default withAuth(AnalyticsPage, ["ANALYST", "VIEWER", "ADMIN"])
+const ProtectedAnalyticsPanel = withAuth(AnalyticsPage, ["ANALYST", "VIEWER", "ADMIN"]);
+
+export default function Page() {
+  return <ProtectedAnalyticsPanel />;
+}

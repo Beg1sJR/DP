@@ -331,4 +331,8 @@ function ThreatsPage() {
   )
 }
 
-export default withAuth(ThreatsPage, ["ANALYST", "VIEWER", "ADMIN"])
+const ProtectedThreatsPanel = withAuth(ThreatsPage, ["ADMIN", "ANALYST"]);
+
+export default function Page() {
+  return <ProtectedThreatsPanel />;
+}

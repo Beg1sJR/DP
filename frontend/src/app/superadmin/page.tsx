@@ -192,4 +192,8 @@ function SuperAdminPage() {
   )
 }
 
-export default withAuth(SuperAdminPage, ["SUPER_ADMIN"])
+const ProtectedSuperAdminPanel = withAuth(SuperAdminPage, ["SUPER_ADMIN"]);
+
+export default function Page() {
+  return <ProtectedSuperAdminPanel />;
+}

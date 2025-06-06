@@ -57,7 +57,7 @@ type Forecast = {
   reasoning: string
 }
 
-export default withAuth(function DashboardPage() {
+function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [userCount, setUserCount] = useState<number>(0)
   const [recentLogs, setRecentLogs] = useState<RecentLog[]>([])
@@ -402,4 +402,10 @@ export default withAuth(function DashboardPage() {
       </div>
     </main>
   )
-}, ["ANALYST", "VIEWER", "ADMIN"])
+}
+
+const ProtectedDashboardPanel = withAuth(DashboardPage, ["ANALYST", "VIEWER", "ADMIN"]);
+
+export default function Page() {
+  return <ProtectedDashboardPanel />;
+}

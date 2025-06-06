@@ -210,4 +210,8 @@ function FullLoginHistoryPage() {
   )
 }
 
-export default withAuth(FullLoginHistoryPage, ["ANALYST", "VIEWER", "ADMIN"])
+const ProtectedFullLoginHistoryPanel = withAuth(FullLoginHistoryPage, ["ADMIN", "ANALYST"]);
+
+export default function Page() {
+  return <ProtectedFullLoginHistoryPanel />;
+}

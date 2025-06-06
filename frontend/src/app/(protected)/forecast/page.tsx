@@ -290,4 +290,8 @@ function ForecastPage() {
   )
 }
 
-export default withAuth(ForecastPage, ["ANALYST", "VIEWER", "ADMIN"])
+const ProtectedForecastPanel = withAuth(ForecastPage, ["ADMIN", "ANALYST"]);
+
+export default function Page() {
+  return <ProtectedForecastPanel />;
+}

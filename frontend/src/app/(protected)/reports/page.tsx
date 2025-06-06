@@ -476,4 +476,8 @@ function ReportsPage() {
   )
 }
 
-export default withAuth(ReportsPage, ["ANALYST", "VIEWER", "ADMIN"])
+const ProtectedrReportPanel = withAuth(ReportsPage, ["ADMIN", "ANALYST"]);
+
+export default function Page() {
+  return <ProtectedrReportPanel />;
+}

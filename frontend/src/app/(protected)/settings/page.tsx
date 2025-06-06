@@ -197,4 +197,8 @@ function SettingsPage() {
   )
 }
 
-export default withAuth(SettingsPage, ["ANALYST", "VIEWER", "ADMIN"])
+const ProtectedSettingsPanel = withAuth(SettingsPage, ["ADMIN", "ANALYST", "VIEWER"]);
+
+export default function Page() {
+  return <ProtectedSettingsPanel />;
+}

@@ -424,4 +424,8 @@ function ThreatDetailPage() {
   )
 }
 
-export default withAuth(ThreatDetailPage, ["ANALYST", "VIEWER", "ADMIN"])
+const ProtectedThreatDeatailPanel = withAuth(ThreatDetailPage, ["ADMIN", "ANALYST"]);
+
+export default function Page() {
+  return <ProtectedThreatDeatailPanel />;
+}
