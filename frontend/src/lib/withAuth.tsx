@@ -2,9 +2,9 @@
 
 import { useAuth } from "@/context/AuthContext"
 import { useRouter } from "next/navigation"
-import { useEffect, type FC, type PropsWithChildren } from "react"
+import { JSX, useEffect, type FC } from "react"
 
-export default function withAuth<P extends PropsWithChildren>(
+export default function withAuth<P extends JSX.IntrinsicAttributes>(
   Component: FC<P>,
   allowedRoles?: string[]
 ): FC<P> {
@@ -14,23 +14,15 @@ export default function withAuth<P extends PropsWithChildren>(
 
     useEffect(() => {
       if (!loaded) return
-
       if (!user) {
-        // ❌ Не авторизован → на /login
         router.replace("/login")
       } else if (allowedRoles && !allowedRoles.includes(user.role)) {
-        // 🔒 Авторизован, но нет доступа по роли → на /unauthorized
         router.replace("/unauthorized")
       }
     }, [loaded, user, router])
 
-    // Пока не загружено
     if (!loaded) return null
-
-    // Не показываем, если не авторизован
     if (!user) return null
-
-    // Не показываем, если роль не разрешена
     if (allowedRoles && !allowedRoles.includes(user.role)) return null
 
     return <Component {...props} />
