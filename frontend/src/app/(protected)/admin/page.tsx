@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/select"
 import { toast } from "sonner"
 import { Card } from "@/components/ui/card"
-import withAuth from "@/lib/withAuth"
+import withAuth from "@/lib/withAuth";
 import { Users, UserPlus, Shield, Lock, User, RefreshCw, Search, UserCheck, Trash2, AlertTriangle, X } from "lucide-react"
 
 type UserType = {

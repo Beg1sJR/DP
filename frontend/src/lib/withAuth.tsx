@@ -2,12 +2,7 @@
 
 import { useAuth } from "@/context/AuthContext"
 import { useRouter } from "next/navigation"
-import { useEffect } from "react"
-import type { FC, ReactNode } from "react"
-
-type PropsWithChildren = {
-  children?: ReactNode
-}
+import { useEffect, type FC, type PropsWithChildren } from "react"
 
 export default function withAuth<P extends PropsWithChildren>(
   Component: FC<P>,
