@@ -16,7 +16,7 @@ import { Card } from "@/components/ui/card"
 import withAuth from "@/lib/withAuth"
 import { Users, UserPlus, Shield, Lock, User, RefreshCw, Search, UserCheck, Trash2, AlertTriangle, X } from "lucide-react"
 
-type User = {
+type UserType = {
   id: number
   username: string
   role: string
@@ -24,11 +24,11 @@ type User = {
 
 type DeleteConfirmation = {
   isOpen: boolean
-  user: User | null
+  user: UserType | null
 }
 
 function AdminPanel() {
-  const [users, setUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<UserType[]>([])
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [role, setRole] = useState<"ANALYST" | "VIEWER">("ANALYST")
@@ -46,7 +46,7 @@ function AdminPanel() {
   const [formattedTime, setFormattedTime] = useState('')
   const [usernameCurrent, setUsernameCurrent] = useState('')
 
-  const handleDeleteRequest = (user: User) => {
+  const handleDeleteRequest = (user: UserType) => {
     setDeleteConfirmation({
       isOpen: true,
       user: user
@@ -113,6 +113,7 @@ function AdminPanel() {
 
   useEffect(() => {
     fetchUsers()
+     
   }, [])
 
   const handleCreate = async () => {
