@@ -522,4 +522,8 @@ function AdminPanel() {
   )
 }
 
-export default withAuth(AdminPanel, ["ADMIN"])
+const ProtectedAdminPanel = withAuth(AdminPanel, ["ADMIN"]);
+
+export default function Page() {
+  return <ProtectedAdminPanel />;
+}
