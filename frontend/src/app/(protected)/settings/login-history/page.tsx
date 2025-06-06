@@ -5,7 +5,7 @@ import { API } from "@/lib/axios"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import withAuth from "@/lib/withAuth"
-import { Clock, Globe, MapPin, ArrowLeft, Filter, Download, Search, Shield } from "lucide-react"
+import { Clock, Globe, MapPin, ArrowLeft, Search, Shield } from "lucide-react"
 import { Input } from "@/components/ui/input"
 
 type LoginEntry = {
@@ -109,19 +109,6 @@ function FullLoginHistoryPage() {
               />
             </div>
             
-            <Button 
-              variant="outline" 
-              className="bg-gray-800 border-gray-700 hover:bg-gray-700 text-white"
-            >
-              <Filter size={16} />
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              className="bg-gray-800 border-gray-700 hover:bg-gray-700 text-white"
-            >
-              <Download size={16} />
-            </Button>
           </div>
         </div>
 
@@ -150,7 +137,6 @@ function FullLoginHistoryPage() {
               <div>Время</div>
             </div>
             {filteredHistory.map((entry, i) => {
-              const entryDate = new Date(entry.timestamp);
               return (
                 <div
                   key={i}
@@ -174,12 +160,12 @@ function FullLoginHistoryPage() {
                     </div>
                     
                     <div className="text-gray-300">
-                      {entryDate.toLocaleDateString('ru-RU')}
+                    <div className="text-sm text-gray-300">{new Date(entry.timestamp).toLocaleDateString('ru-RU')}</div>
                     </div>
                     
                     <div className="flex justify-between items-center">
                       <span className="text-gray-300">
-                        {entryDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                        <div className="text-gray-300">{new Date(entry.timestamp + 'Z').toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</div>
                       </span>
                       <span
                         className={`px-2 py-1 rounded text-xs border

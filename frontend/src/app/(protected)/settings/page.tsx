@@ -5,7 +5,7 @@ import { API } from "@/lib/axios"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import withAuth from "@/lib/withAuth"
-import { Settings, Clock, Globe, MapPin, ChevronRight, Shield, Bell } from "lucide-react"
+import { Settings, Clock, Globe, MapPin, ChevronRight, Shield } from "lucide-react"
 
 type LoginEntry = {
   id: number
@@ -99,14 +99,6 @@ function SettingsPage() {
             </div>
             
             <div className="space-y-4">
-              <Button 
-                variant="outline"
-                className="w-full bg-gray-800/60 border-gray-700/40 hover:bg-gray-800 text-white justify-start"
-                onClick={() => {}}
-              >
-                <Bell className="mr-2 h-4 w-4 text-blue-400" />
-                Настройки уведомлений
-              </Button>
               
               <Button 
                 variant="outline"
@@ -170,7 +162,7 @@ function SettingsPage() {
                       
                       <div className="flex flex-col items-end">
                         <div className="text-sm text-gray-300">{new Date(entry.timestamp).toLocaleDateString('ru-RU')}</div>
-                        <div className="text-xs text-gray-500">{new Date(entry.timestamp).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</div>
+                        <div className="text-xs text-gray-500">{new Date(entry.timestamp + 'Z').toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}</div>
                       </div>
                     </div>
                     

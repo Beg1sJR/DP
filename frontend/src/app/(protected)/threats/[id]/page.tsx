@@ -104,16 +104,16 @@ function ThreatDetailPage() {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Активна":
-        return "bg-red-600"
-      case "Заблокирована":
-        return "bg-emerald-600"
-      default:
-        return "bg-gray-600"
-    }
-  }
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case "Активна":
+  //       return "bg-red-600"
+  //     case "Заблокирована":
+  //       return "bg-emerald-600"
+  //     default:
+  //       return "bg-gray-600"
+  //   }
+  // }
 
   if (isLoading) {
     return (
@@ -188,12 +188,22 @@ function ThreatDetailPage() {
               <div className={`w-3 h-3 rounded-full ${severityColors.dot} mr-3`}></div>
               <h2 className="text-xl font-semibold">{log.attack_type}</h2>
             </div>
-            <Badge className={`${getStatusColor(log.status)} px-3 py-1`}>
-              <div className="flex items-center gap-1.5">
-                <div className={`w-1.5 h-1.5 rounded-full ${log.status === "Активна" ? "bg-red-300 animate-pulse" : "bg-emerald-200"}`}></div>
-                {log.status}
-              </div>
-            </Badge>
+              {log.status === "Активна" && log.probability > 70 && (
+              <Badge className="bg-red-600 px-3 py-1">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-red-300 animate-pulse"></div>
+                  Активна
+                </div>
+              </Badge>
+            )}
+            {log.status === "Заблокирована" && (
+              <Badge className="bg-emerald-600 px-3 py-1">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-emerald-200"></div>
+                  Заблокирована
+                </div>
+              </Badge>
+            )}
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -299,7 +309,7 @@ function ThreatDetailPage() {
           </div>
           
           <div className="flex flex-col gap-3 mt-6">
-            {log.status === "Активна" && (
+          {log.status === "Активна" && log.probability >= 70 && (
               <Button 
                 onClick={handleResolve} 
                 disabled={isResolving}

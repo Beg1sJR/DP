@@ -72,7 +72,30 @@ type SeverityData = {
   windows: Record<string, number>
   syslog: Record<string, number>
 }
+type CpuInfo = {
+  count_logical: number | null;
+  count_physical: number | null;
+  freq_current: number | null;
+  freq_max: number | null;
+};
+type MemoryInfo = {
+  total: number | null;
+  used: number | null;
+  available: number | null;
+  free: number | null;
+};
 
+type DiskInfo = {
+  total: number | null;
+  used: number | null;
+  free: number | null;
+  percent: number | null;
+};
+
+type NetworkInfo = {
+  totalSent: number | null;
+  totalRecv: number | null;
+};
 function AnalyticsPage() {
   const [activity, setActivity] = useState<ActivityData>([])
   const [geo, setGeo] = useState<CountryData>({})
@@ -87,6 +110,29 @@ function AnalyticsPage() {
   const [currentTime, setCurrentTime] = useState('')
   const [username, setUsername] = useState('')
 
+  const [cpuInfo, setCpuInfo] = useState<CpuInfo>({
+    count_logical: null,
+    count_physical: null,
+    freq_current: null,
+    freq_max: null,
+  });
+
+  const [memoryInfo, setMemoryInfo] = useState<MemoryInfo>({
+    total: null,
+    used: null,
+    available: null,
+    free: null,
+  });
+  const [diskInfo, setDiskInfo] = useState<DiskInfo>({
+    total: null,
+    used: null,
+    free: null,
+    percent: null,
+  });
+  const [networkInfo, setNetworkInfo] = useState<NetworkInfo>({
+    totalSent: null,
+    totalRecv: null,
+  });
 
   const [cpu, setCpu] = useState<number[]>([]);
   const [mem, setMem] = useState<number[]>([]);
@@ -101,7 +147,7 @@ function AnalyticsPage() {
 
   useEffect(() => {
     const interval = setInterval(async () => {
-      const res = await fetch('http://localhost:8000/system/metrics', {
+      const res = await fetch('https://dp-production-f7cf.up.railway.app/system/metrics', {
         headers: {
           "Authorization": "Bearer " + localStorage.getItem("token")
         }
@@ -113,6 +159,30 @@ function AnalyticsPage() {
       setCpu(prev => [...prev.slice(-MAX_POINTS + 1), json.cpu.percent]);
       setMem(prev => [...prev.slice(-MAX_POINTS + 1), json.memory.percent]);
       setDisk(prev => [...prev.slice(-MAX_POINTS + 1), json.disk.percent]);
+
+      setCpuInfo({
+        count_logical: json.cpu.count_logical,
+        count_physical: json.cpu.count_physical,
+        freq_current: json.cpu.freq.current,
+        freq_max: json.cpu.freq.max,
+      });
+  
+      setMemoryInfo({
+        total: json.memory.total,
+        used: json.memory.used,
+        available: json.memory.available,
+        free: json.memory.free,
+      });
+      setDiskInfo({
+        total: json.disk.total,
+        used: json.disk.used,
+        free: json.disk.free,
+        percent: json.disk.percent,
+      });
+      setNetworkInfo({
+        totalSent: json.net.bytes_sent,
+        totalRecv: json.net.bytes_recv,
+      });
 
       // Для сети считаем скорость (Bps)
       if (lastNet.current) {
@@ -185,9 +255,7 @@ function AnalyticsPage() {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (!token) return;
 
-    const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsHost = "localhost:8000";
-    const wsUrl = `${wsProtocol}://${wsHost}/ws/analytics?token=${token}`;
+    const wsUrl = `wss://dp-production-f7cf.up.railway.app/ws/analytics?token=${token}`;
     const ws = new WebSocket(wsUrl);
 
     ws.onopen = () => {
@@ -628,296 +696,311 @@ function AnalyticsPage() {
 
   <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
     {/* CPU */}
-    <div className={chartBox}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-emerald-900/30 rounded-md flex items-center justify-center mr-3">
-            <BarChart2 size={16} className="text-emerald-400" />
-          </div>
-          <h3 className="font-semibold">CPU</h3>
-        </div>
-        <div className="text-right">
-          <div className="text-sm font-mono text-emerald-400">
-            {cpu.length ? cpu[cpu.length - 1].toFixed(1) : '0.0'}%
-          </div>
-          <div className="text-xs text-gray-400">
-            {typeof window !== 'undefined' && cpu.length > 0 && (() => {
-              const lastValue = cpu[cpu.length - 1];
-              return lastValue > 80 ? 'Высокая' : lastValue > 50 ? 'Средняя' : 'Низкая';
-            })()}
-          </div>
-        </div>
+<div className={chartBox}>
+  <div className="flex items-center justify-between mb-4">
+    <div className="flex items-center">
+      <div className="w-8 h-8 bg-emerald-900/30 rounded-md flex items-center justify-center mr-3">
+        <BarChart2 size={16} className="text-emerald-400" />
       </div>
-      <div className="mb-3">
-        <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
-          <div>Логич. ядра: <span className="text-white font-mono">12</span></div>
-          <div>Физич. ядра: <span className="text-white font-mono">6</span></div>
-          <div>Частота: <span className="text-white font-mono">2.7 ГГц</span></div>
-          <div>Макс.: <span className="text-white font-mono">2.7 ГГц</span></div>
-        </div>
+      <h3 className="font-semibold">CPU</h3>
+    </div>
+    <div className="text-right">
+      <div className="text-sm font-mono text-emerald-400">
+        {cpu.length ? cpu[cpu.length - 1].toFixed(1) : '0.0'}%
       </div>
-      <div className="flex-grow">
-        <Line
-          data={{
-            labels,
-            datasets: [{
-              label: "CPU",
-              data: cpu,
-              borderColor: chartColors.emerald,
-              backgroundColor: "rgba(16, 185, 129, 0.1)",
-              fill: true,
-              tension: 0.4,
-              pointRadius: 0,
-              pointHoverRadius: 4,
-            }]
-          }}
-          options={{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { ...pieOptions.plugins.tooltip } },
-            scales: {
-              x: { display: false },
-              y: {
-                min: 0,
-                max: 100,
-                ticks: { color: "#9ca3af", font: { size: 9 } },
-                grid: { color: "rgba(75, 85, 99, 0.2)" }
-              }
-            }
-          }}
-          height={120}
-        />
+      <div className="text-xs text-gray-400">
+        {typeof window !== 'undefined' && cpu.length > 0 && (() => {
+          const lastValue = cpu[cpu.length - 1];
+          return lastValue > 80 ? 'Высокая' : lastValue > 50 ? 'Средняя' : 'Низкая';
+        })()}
       </div>
     </div>
+  </div>
+  <div className="mb-3">
+    <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
+      <div>Логич. ядра: <span className="text-white font-mono">{cpuInfo.count_logical ?? "—"}</span></div>
+      <div>Физич. ядра: <span className="text-white font-mono">{cpuInfo.count_physical ?? "—"}</span></div>
+      <div>Частота: <span className="text-white font-mono">
+        {cpuInfo.freq_current ? (cpuInfo.freq_current / 1000).toFixed(2) : "—"} ГГц
+      </span></div>
+      <div>Макс. частота: <span className="text-white font-mono">
+        {cpuInfo.freq_max && cpuInfo.freq_max > 0 ? (cpuInfo.freq_max / 1000).toFixed(2) : "—"} ГГц
+      </span></div>
+    </div>
+  </div>
+  <div className="flex-grow">
+    <Line
+      data={{
+        labels,
+        datasets: [{
+          label: "CPU",
+          data: cpu,
+          borderColor: chartColors.emerald,
+          backgroundColor: "rgba(16, 185, 129, 0.1)",
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+        }]
+      }}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { ...pieOptions.plugins.tooltip } },
+        scales: {
+          x: { display: false },
+          y: {
+            min: 0,
+            max: 100,
+            ticks: { color: "#9ca3af", font: { size: 9 } },
+            grid: { color: "rgba(75, 85, 99, 0.2)" }
+          }
+        }
+      }}
+      height={120}
+    />
+  </div>
+</div>
+
 
     {/* Memory */}
     <div className={chartBox}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-blue-900/30 rounded-md flex items-center justify-center mr-3">
-            <BarChart2 size={16} className="text-blue-400" />
-          </div>
-          <h3 className="font-semibold">Память</h3>
-        </div>
-        <div className="text-right">
-          <div className="text-sm font-mono text-blue-400">
-            {mem.length ? mem[mem.length - 1].toFixed(1) : '0.0'}%
-          </div>
-          <div className="text-xs text-gray-400">
-            {typeof window !== 'undefined' && mem.length > 0 && (() => {
-              const lastValue = mem[mem.length - 1];
-              return lastValue > 90 ? 'Критич.' : lastValue > 70 ? 'Высокая' : 'Норма';
-            })()}
-          </div>
-        </div>
+  <div className="flex items-center justify-between mb-4">
+    <div className="flex items-center">
+      <div className="w-8 h-8 bg-blue-900/30 rounded-md flex items-center justify-center mr-3">
+        <BarChart2 size={16} className="text-blue-400" />
       </div>
-      <div className="mb-3">
-        <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
-          <div>Всего: <span className="text-white font-mono">15.7 ГБ</span></div>
-          <div>Используется: <span className="text-white font-mono">15.0 ГБ</span></div>
-          <div>Доступно: <span className="text-white font-mono">747 МБ</span></div>
-          <div>Свободно: <span className="text-white font-mono">747 МБ</span></div>
-        </div>
+      <h3 className="font-semibold">Память</h3>
+    </div>
+    <div className="text-right">
+      <div className="text-sm font-mono text-blue-400">
+        {mem.length ? mem[mem.length - 1].toFixed(1) : '0.0'}%
       </div>
-      <div className="flex-grow">
-        <Line
-          data={{
-            labels,
-            datasets: [{
-              label: "Memory",
-              data: mem,
-              borderColor: chartColors.blue,
-              backgroundColor: "rgba(59, 130, 246, 0.1)",
-              fill: true,
-              tension: 0.4,
-              pointRadius: 0,
-              pointHoverRadius: 4,
-            }]
-          }}
-          options={{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { ...pieOptions.plugins.tooltip } },
-            scales: {
-              x: { display: false },
-              y: {
-                min: 0,
-                max: 100,
-                ticks: { color: "#9ca3af", font: { size: 9 } },
-                grid: { color: "rgba(75, 85, 99, 0.2)" }
-              }
-            }
-          }}
-          height={120}
-        />
+      <div className="text-xs text-gray-400">
+        {typeof window !== 'undefined' && mem.length > 0 && (() => {
+          const lastValue = mem[mem.length - 1];
+          return lastValue > 90 ? 'Критич.' : lastValue > 70 ? 'Высокая' : 'Норма';
+        })()}
       </div>
     </div>
+  </div>
+  <div className="mb-3">
+    <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
+      <div>Всего: <span className="text-white font-mono">
+        {memoryInfo.total !== null ? (memoryInfo.total / 1024 / 1024 / 1024).toFixed(1) : "—"} ГБ
+      </span></div>
+      <div>Используется: <span className="text-white font-mono">
+        {memoryInfo.used !== null ? (memoryInfo.used / 1024 / 1024 / 1024).toFixed(1) : "—"} ГБ
+      </span></div>
+      <div>Доступно: <span className="text-white font-mono">
+        {memoryInfo.available !== null ? (memoryInfo.available / 1024 / 1024 / 1024).toFixed(1) : "—"} ГБ
+      </span></div>
+      <div>Свободно: <span className="text-white font-mono">
+        {memoryInfo.free !== null ? (memoryInfo.free / 1024 / 1024 / 1024).toFixed(1) : "—"} ГБ
+      </span></div>
+    </div>
+  </div>
+  <div className="flex-grow">
+    <Line
+      data={{
+        labels,
+        datasets: [{
+          label: "Memory",
+          data: mem,
+          borderColor: chartColors.blue,
+          backgroundColor: "rgba(59, 130, 246, 0.1)",
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+        }]
+      }}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { ...pieOptions.plugins.tooltip } },
+        scales: {
+          x: { display: false },
+          y: {
+            min: 0,
+            max: 100,
+            ticks: { color: "#9ca3af", font: { size: 9 } },
+            grid: { color: "rgba(75, 85, 99, 0.2)" }
+          }
+        }
+      }}
+      height={120}
+    />
+  </div>
+</div>
 
     {/* Disk */}
     <div className={chartBox}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-red-900/30 rounded-md flex items-center justify-center mr-3">
-            <BarChart2 size={16} className="text-red-400" />
-          </div>
-          <h3 className="font-semibold">Диск</h3>
-        </div>
-        <div className="text-right">
-          <div className="text-sm font-mono text-red-400">
-            {disk.length ? disk[disk.length - 1].toFixed(1) : '0.0'}%
-          </div>
-          <div className="text-xs text-gray-400">
-            {typeof window !== 'undefined' && disk.length > 0 && (() => {
-              const lastValue = disk[disk.length - 1];
-              return lastValue > 90 ? 'Заполнен' : lastValue > 70 ? 'Высокий' : 'Норма';
-            })()}
-          </div>
-        </div>
+  <div className="flex items-center justify-between mb-4">
+    <div className="flex items-center">
+      <div className="w-8 h-8 bg-purple-900/30 rounded-md flex items-center justify-center mr-3">
+        <BarChart2 size={16} className="text-purple-400" />
       </div>
-      <div className="mb-3">
-        <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
-          <div>Всего: <span className="text-white font-mono">474 ГБ</span></div>
-          <div>Используется: <span className="text-white font-mono">378 ГБ</span></div>
-          <div>Свободно: <span className="text-white font-mono">96 ГБ</span></div>
-          <div>Занято: <span className="text-white font-mono">79.7%</span></div>
-        </div>
+      <h3 className="font-semibold">Диск</h3>
+    </div>
+    <div className="text-right">
+      <div className="text-sm font-mono text-purple-400">
+        {disk.length ? disk[disk.length - 1].toFixed(1) : '0.0'}%
       </div>
-      <div className="flex-grow">
-        <Line
-          data={{
-            labels,
-            datasets: [{
-              label: "Disk",
-              data: disk,
-              borderColor: chartColors.red,
-              backgroundColor: "rgba(239, 68, 68, 0.1)",
-              fill: true,
-              tension: 0.4,
-              pointRadius: 0,
-              pointHoverRadius: 4,
-            }]
-          }}
-          options={{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false }, tooltip: { ...pieOptions.plugins.tooltip } },
-            scales: {
-              x: { display: false },
-              y: {
-                min: 0,
-                max: 100,
-                ticks: { color: "#9ca3af", font: { size: 9 } },
-                grid: { color: "rgba(75, 85, 99, 0.2)" }
-              }
-            }
-          }}
-          height={120}
-        />
+      <div className="text-xs text-gray-400">
+        {typeof window !== 'undefined' && disk.length > 0 && (() => {
+          const lastValue = disk[disk.length - 1];
+          return lastValue > 90 ? 'Заполнен' : lastValue > 70 ? 'Много' : 'Норма';
+        })()}
       </div>
     </div>
+  </div>
+  <div className="mb-3">
+    <div className="grid grid-cols-2 gap-2 text-xs text-gray-400">
+      <div>Всего: <span className="text-white font-mono">
+        {diskInfo.total !== null ? (diskInfo.total / 1024 / 1024 / 1024).toFixed(0) : "—"} ГБ
+      </span></div>
+      <div>Используется: <span className="text-white font-mono">
+        {diskInfo.used !== null ? (diskInfo.used / 1024 / 1024 / 1024).toFixed(0) : "—"} ГБ
+      </span></div>
+      <div>Свободно: <span className="text-white font-mono">
+        {diskInfo.free !== null ? (diskInfo.free / 1024 / 1024 / 1024).toFixed(0) : "—"} ГБ
+      </span></div>
+      <div>Занято: <span className="text-white font-mono">
+        {diskInfo.percent !== null ? diskInfo.percent.toFixed(1) : "—"}%
+      </span></div>
+    </div>
+  </div>
+  <div className="flex-grow">
+    <Line
+      data={{
+        labels,
+        datasets: [{
+          label: "Disk",
+          data: disk,
+          borderColor: chartColors.purple,
+          backgroundColor: "rgba(139, 92, 246, 0.1)",
+          fill: true,
+          tension: 0.4,
+          pointRadius: 0,
+          pointHoverRadius: 4,
+        }]
+      }}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { ...pieOptions.plugins.tooltip } },
+        scales: {
+          x: { display: false },
+          y: {
+            min: 0,
+            max: 100,
+            ticks: { color: "#9ca3af", font: { size: 9 } },
+            grid: { color: "rgba(75, 85, 99, 0.2)" }
+          }
+        }
+      }}
+       height={120}
+      />
+    </div>
+  </div>  
 
     {/* Network */}
-    <div className={`${chartBox} lg:col-span-2 xl:col-span-3`}>
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center">
-          <div className="w-8 h-8 bg-purple-900/30 rounded-md flex items-center justify-center mr-3">
-            <Globe size={16} className="text-purple-400" />
-          </div>
-          <h3 className="font-semibold">Сетевая активность</h3>
-        </div>
-        <div className="flex items-center gap-4">
-          <div className="text-right">
-            <div className="text-xs text-gray-400">Отправлено</div>
-            <div className="text-sm font-mono text-yellow-400">
-              {netSent.length ? (netSent[netSent.length - 1] / 1024).toFixed(1) : '0.0'} КБ/с
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-xs text-gray-400">Получено</div>
-            <div className="text-sm font-mono text-indigo-400">
-              {netRecv.length ? (netRecv[netRecv.length - 1] / 1024).toFixed(1) : '0.0'} КБ/с
-            </div>
-          </div>
-        </div>
+    <div className={`${chartBox} col-span-1 lg:col-span-2 xl:col-span-3`}>
+  <div className="flex items-center justify-between mb-4">
+    <div className="flex items-center">
+      <div className="w-8 h-8 bg-cyan-900/30 rounded-md flex items-center justify-center mr-3">
+        <BarChart2 size={16} className="text-cyan-400" />
       </div>
-      <div className="mb-3">
-        <div className="grid grid-cols-4 gap-4 text-xs text-gray-400">
-          <div>Всего отправлено: <span className="text-white font-mono">867 МБ</span></div>
-          <div>Всего получено: <span className="text-white font-mono">17.0 ГБ</span></div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-            Исходящий трафик
-          </div>
-          <div className="flex items-center">
-            <div className="w-3 h-3 bg-indigo-500 rounded-full mr-2"></div>
-            Входящий трафик
-          </div>
-        </div>
+      <h3 className="font-semibold">Сетевая активность</h3>
+    </div>
+    <div className="text-right">
+      <div className="text-sm font-mono text-cyan-400">
+        ↑{netSent.length ? (netSent[netSent.length - 1] / 1024).toFixed(1) : '0.0'} КБ/с
       </div>
-      <div className="flex-grow">
-        <Line
-          data={{
-            labels,
-            datasets: [
-              {
-                label: "Отправлено",
-                data: netSent.map(v => v / 1024), // Convert to KB/s
-                borderColor: chartColors.yellow,
-                backgroundColor: "rgba(245, 158, 11, 0.1)",
-                fill: false,
-                tension: 0.4,
-                pointRadius: 0,
-                pointHoverRadius: 4,
-              },
-              {
-                label: "Получено",
-                data: netRecv.map(v => v / 1024), // Convert to KB/s
-                borderColor: chartColors.indigo,
-                backgroundColor: "rgba(99, 102, 241, 0.1)",
-                fill: false,
-                tension: 0.4,
-                pointRadius: 0,
-                pointHoverRadius: 4,
-              }
-            ]
-          }}
-          options={{
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-              legend: {
-                display: true,
-                position: "top" as const,
-                labels: {
-                  color: "#d1d5db",
-                  padding: 20,
-                  font: { size: 11 },
-                  boxWidth: 14,
-                },
-              },
-              tooltip: { ...pieOptions.plugins.tooltip }
-            },
-            scales: {
-              x: {
-                ticks: { color: "#9ca3af", font: { size: 10 } },
-                grid: { color: "rgba(75, 85, 99, 0.2)" }
-              },
-              y: {
-                ticks: {
-                  color: "#d1d5db",
-                  font: { size: 10 },
-                  callback: function(value) {
-                    return value + ' КБ/с';
-                  }
-                },
-                grid: { color: "rgba(75, 85, 99, 0.1)" }
-              }
-            }
-          }}
-          height={180}
-        />
+      <div className="text-xs text-gray-400">
+        ↓{netRecv.length ? (netRecv[netRecv.length - 1] / 1024).toFixed(1) : '0.0'} КБ/с
       </div>
     </div>
+  </div>
+  
+  <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-3 text-xs text-gray-400">
+    <div>Всего отправлено: <span className="text-white font-mono">
+      {networkInfo.totalSent !== null ? (networkInfo.totalSent / 1024 / 1024).toFixed(1) : "—"} МБ
+    </span></div>
+    <div>Всего получено: <span className="text-white font-mono">
+      {networkInfo.totalRecv !== null ? (networkInfo.totalRecv / 1024 / 1024 / 1024).toFixed(1) : "—"} ГБ
+    </span></div>
+    <div className="flex items-center">
+      <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+      Исходящий трафик
+    </div>
+    <div className="flex items-center">
+      <div className="w-3 h-3 bg-indigo-500 rounded-full mr-2"></div>
+      Входящий трафик
+    </div>
+  </div>
+  
+  <div className="flex-grow">
+    <Line
+      data={{
+        labels,
+        datasets: [
+          {
+            label: "Отправлено",
+            data: netSent,
+            borderColor: chartColors.yellow,
+            backgroundColor: "rgba(245, 158, 11, 0.1)",
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+          },
+          {
+            label: "Получено",
+            data: netRecv,
+            borderColor: chartColors.indigo,
+            backgroundColor: "rgba(99, 102, 241, 0.1)",
+            fill: false,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 4,
+          }
+        ]
+      }}
+      options={{
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { 
+          legend: { display: false }, 
+          tooltip: { 
+            ...pieOptions.plugins.tooltip,
+            callbacks: {
+              label: function(context) {
+                return `${context.dataset.label}: ${(context.parsed.y / 1024).toFixed(1)} КБ/с`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { display: false },
+          y: {
+            min: 0,
+            ticks: { 
+              color: "#9ca3af", 
+              font: { size: 9 },
+              callback: function(value) {
+                return (Number(value) / 1024).toFixed(0) + ' КБ/с';
+              }
+            },
+            grid: { color: "rgba(75, 85, 99, 0.2)" }
+          }
+        }
+      }}
+      height={120}
+    />
+  </div>
+</div>
 
     {/* Temperature sensors if available */}
     {Object.keys(temps).map(label => (

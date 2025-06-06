@@ -221,14 +221,6 @@ function ForecastHistoryPage() {
                   </div>
                 </div>
                 
-                <div className="flex justify-end">
-                  <Button
-                    onClick={() => router.push(`/forecast/${f.id}`)}
-                    className="bg-gray-800 hover:bg-gray-700 text-white text-xs"
-                  >
-                    Подробнее
-                  </Button>
-                </div>
               </div>
             )
           })}

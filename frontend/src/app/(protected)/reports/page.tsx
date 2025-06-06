@@ -4,14 +4,16 @@ import { useEffect, useState } from "react"
 import { API } from "@/lib/axios"
 import { Button } from "@/components/ui/button"
 import { CalendarIcon, FileText, Download, RefreshCw, ChevronDown, ChevronUp, FileSpreadsheet, FileArchive, Clock, Filter, Calendar, BarChart, FileJson } from "lucide-react"
-import { format } from "date-fns"
 import { DateRange } from "react-day-picker"
 import { cn } from "@/lib/utils"
 import { Calendar as CalendarComponent } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { subDays, startOfDay, endOfDay } from "date-fns"
 import withAuth from "@/lib/withAuth"
-import { ru } from 'date-fns/locale'
+import { format } from "date-fns"
+import { subDays, startOfDay, endOfDay } from "date-fns"
+// import { formatDistanceToNow, parseISO } from "date-fns"
+import { ru } from "date-fns/locale"
+
 
 type Report = {
   id: string
@@ -64,7 +66,9 @@ function ReportsPage() {
       return
     }
 
-    fetch(`http://localhost:8000/export/${format}?id=${id}`, {
+
+
+    fetch(`https://dp-production-f7cf.up.railway.app/export/${format}?id=${id}`, {
       headers: {
         Authorization: `Bearer ${token}`
       }
@@ -87,10 +91,10 @@ function ReportsPage() {
   }
 
   const handleQuickGenerate = async (days: number) => {
-    const now = new Date()
-    const from = startOfDay(subDays(now, days))
-    const to = endOfDay(subDays(now, 1))
-  
+    const now = new Date();
+    const from = startOfDay(subDays(now, days )); // Начало периода: N-1 дней назад от сегодня
+    const to = endOfDay(now);
+
     setLoading(true)
     try {
       const res = await API.post("/reports/generate", {
@@ -133,14 +137,20 @@ function ReportsPage() {
       .finally(() => setIsLoading(false))
   }, [])
 
+
+
+
   const handleGenerate = async () => {
     if (!date?.from || !date?.to) return
+
+    const from = startOfDay(date.from);
+    const to = endOfDay(date.to); 
 
     setLoading(true)
     try {
       const res = await API.post("/reports/generate", {
-        from_date: date.from,
-        to_date: date.to,
+        from_date: from.toISOString(),
+        to_date: to.toISOString(),
       })
       setReports((prev) => [res.data, ...prev])
     } catch {
@@ -149,23 +159,12 @@ function ReportsPage() {
       setLoading(false)
     }
   }
+
+  // const getTimeAgo = (dateString: string) => {
+  //   return formatDistanceToNow(parseISO(dateString), { addSuffix: true, locale: ru });
+  // };
   
-  const getTimeAgo = (dateString: string) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / (1000 * 60));
-    const diffHrs = Math.floor(diffMs / (1000 * 60 * 60));
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-    
-    if (diffMins < 60) {
-      return `${diffMins} мин. назад`;
-    } else if (diffHrs < 24) {
-      return `${diffHrs} ч. назад`;
-    } else {
-      return `${diffDays} дн. назад`;
-    }
-  };
+
 
   return (
     <main className="p-6 bg-gradient-to-b from-black to-gray-900 text-white min-h-screen">
@@ -344,10 +343,13 @@ function ReportsPage() {
                     <h3 className="text-xl font-semibold mb-2">{report.title}</h3>
                     <div className="flex items-center gap-2 text-sm">
                       <Calendar size={14} className="text-gray-400" />
-                      <span className="text-gray-400">{new Date(report.created_at).toLocaleDateString()}</span>
+                      <span className="text-gray-400">{new Date(report.created_at.endsWith('Z') ? report.created_at : report.created_at + 'Z')
+                        .toLocaleDateString('ru-RU')}</span>
                       <Clock size={14} className="text-gray-400 ml-2" />
-                      <span className="text-gray-400">{new Date(report.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                      <span className="text-emerald-400 ml-2">({getTimeAgo(report.created_at)})</span>
+                      <span className="text-gray-400 ml-2">
+                        {new Date(report.created_at + 'Z').toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    
                     </div>
                   </div>
                 </div>

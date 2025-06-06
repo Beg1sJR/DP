@@ -93,12 +93,12 @@ export default withAuth(function DashboardPage() {
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (!token) return;
-
-    const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsHost = "localhost:8000";
+  
+    const wsProtocol = "wss";
+    const wsHost = "dp-production-f7cf.up.railway.app";
     const wsUrl = `${wsProtocol}://${wsHost}/ws/dashboard?token=${token}`;
     const ws = new WebSocket(wsUrl);
-
+  
     ws.onopen = () => {
       console.log("WS OPEN (dashboard)");
     };
@@ -110,23 +110,12 @@ export default withAuth(function DashboardPage() {
     };
     ws.onmessage = (event) => {
       console.log("WS MESSAGE (dashboard):", event.data);
-      try {
-        const msg = JSON.parse(event.data);
-        if (msg.type === "dashboard_update") {
-          if (msg.stats) setStats(msg.stats);
-          if (typeof msg.userCount === "number") setUserCount(msg.userCount);
-          if (msg.recentLogs) setRecentLogs(msg.recentLogs);
-          // Если появится прогноз по ws:
-          if (msg.forecast) setForecast(msg.forecast);
-        }
-      } catch (err) {
-        console.log("WS PARSE ERROR (dashboard)", err)
-      }
     };
+  
     return () => {
       ws.close();
     };
-  }, [])
+  }, []);
 
   const cards = [
     {

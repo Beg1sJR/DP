@@ -45,9 +45,9 @@ function ThreatsPage() {
       return;
     }
   
-    const wsProtocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const wsHost = "localhost:8000";
-    const wsUrl = `${wsProtocol}://${wsHost}/ws/threats?token=${token}`;
+    const wsHost = "dp-production-f7cf.up.railway.app";
+    const wsProtocol = "wss";
+    const wsUrl = `${wsProtocol}://${wsHost}/ws/threats?token=${token}`;    
     const ws = new WebSocket(wsUrl);
   
     ws.onopen = () => {
@@ -109,16 +109,16 @@ function ThreatsPage() {
     )
   })
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Активна":
-        return "bg-red-600 hover:bg-red-500"
-      case "Заблокирована":
-        return "bg-emerald-600 hover:bg-emerald-500"
-      default:
-        return "bg-gray-600 hover:bg-gray-500"
-    }
-  }
+  // const getStatusColor = (status: string) => {
+  //   switch (status) {
+  //     case "Активна":
+  //       return "bg-red-600 hover:bg-red-500"
+  //     case "Заблокирована":
+  //       return "bg-emerald-600 hover:bg-emerald-500"
+  //     default:
+  //       return "bg-gray-600 hover:bg-gray-500"
+  //   }
+  // }
 
   const getThreathLevel = (probability: number) => {
     if (probability >= 80) {
@@ -298,12 +298,22 @@ function ThreatsPage() {
                         {log.timestamp ? new Date(log.timestamp).toLocaleString() : "—"}
                       </td>
                       <td className="px-6 py-4">
-                        <Badge className={`${getStatusColor(log.status)} transition-colors`}>
-                          <div className="flex items-center gap-1.5">
-                            <div className={`w-1.5 h-1.5 rounded-full ${log.status === "Активна" ? "bg-red-300 animate-pulse" : "bg-emerald-200"}`}></div>
-                            {log.status}
-                          </div>
-                        </Badge>
+                        {(log.status === "Активна" && log.probability > 70) && (
+                          <Badge className="bg-red-600 hover:bg-red-500 transition-colors">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-red-300 animate-pulse"></div>
+                              Активна
+                            </div>
+                          </Badge>
+                        )}
+                        {log.status === "Заблокирована" && (
+                          <Badge className="bg-emerald-600 hover:bg-emerald-500 transition-colors">
+                            <div className="flex items-center gap-1.5">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-200"></div>
+                              Заблокирована
+                            </div>
+                          </Badge>
+                        )}
                       </td>
                     </tr>
                   )
