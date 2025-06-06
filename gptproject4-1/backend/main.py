@@ -53,7 +53,7 @@ app.openapi = lambda: custom_openapi(app)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=["https://dp-delta-one.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
