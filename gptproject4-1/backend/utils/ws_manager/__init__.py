@@ -14,7 +14,6 @@ active_connections = {}
 
 def add_connection(company_id, ws):
     print("DEBUG after add_connection:", active_connections)
-
     print(f"add_connection company_id={company_id}, ws_id={id(ws)}")
     if company_id not in active_connections:
         active_connections[company_id] = []
@@ -26,6 +25,9 @@ def remove_connection(company_id, ws):
             active_connections[company_id].remove(ws)
         except ValueError:
             pass
+        # Если список пуст, удаляем ключ
+        if not active_connections[company_id]:
+            del active_connections[company_id]
 
 def fix_stats(stats):
     # attack_types: dict -> list of objects
@@ -45,7 +47,6 @@ def fix_stats(stats):
         import ast
         def parse_tuple(s):
             try:
-                # Безопасно парсим строку вида "('...', 13)"
                 name, count = ast.literal_eval(s)
                 return {"name": name, "count": count}
             except Exception:
@@ -55,10 +56,8 @@ def fix_stats(stats):
         ]
         stats["top_3_attacks"] = [item for item in stats["top_3_attacks"] if item]
 
-        # Если top_3_attacks нет или он пустой, формируем из attack_types
         if (("top_3_attacks" not in stats or not stats["top_3_attacks"])
                 and "attack_types" in stats and isinstance(stats["attack_types"], list)):
-            # Берём топ-3 по количеству
             sorted_types = sorted(stats["attack_types"], key=lambda x: x["count"], reverse=True)[:3]
             stats["top_3_attacks"] = sorted_types
 
@@ -77,14 +76,6 @@ async def notify_dashboard_update(company_id: str):
         recent_logs = get_recent_logs(db, company_id, limit=5)
 
         print("recent_logs types:", [type(log) for log in recent_logs])
-
-        # for log in recent_logs:
-        #     try:
-        #         log_dict = LogAnalysisOut.from_orm(log).dict()
-        #         # for k, v in log_dict.items():
-        #             # print(f"{k}: {type(v)}")
-        #     except Exception as e:
-        #         print("Ошибка при сериализации лога:", e)
 
         if not isinstance(stats, dict):
             try:
@@ -108,18 +99,18 @@ async def notify_dashboard_update(company_id: str):
             "stats": stats,
             "userCount": user_count,
             "recentLogs": [LogAnalysisOut.from_orm(log).dict() for log in recent_logs],
-        }, default=str)  # default=str для сериализации дат
+        }, default=str)
 
         print("Отправляем обновление по WS для company_id - notify_dashboard_update:", company_id, "клиентов:",
-              len(active_threats_connections.get(company_id, [])))
+              len(active_connections.get(company_id, [])))
 
-        for ws in active_connections[company_id][:]:
+        for ws in active_connections.get(company_id, [])[:]:
             try:
                 await ws.send_text(message)
             except Exception as e:
-                print("Ошибка при  отправке ws:", e)
-                traceback.print_exc()  # Эта строка покажет полный stack trace ошибки
-                remove_connection(company_id, ws)  # удаляем мёртвые соединения
+                print("Ошибка при отправке ws:", e)
+                traceback.print_exc()
+                remove_connection(company_id, ws)
     finally:
         db.close()
 
@@ -142,16 +133,17 @@ def remove_threats_connection(company_id, ws):
             print(f"WS removed: {company_id}, total: {len(active_threats_connections[company_id])}")
         except ValueError:
             pass
+        if not active_threats_connections[company_id]:
+            del active_threats_connections[company_id]
 
 async def notify_threats_update(company_id: str):
     db = SessionLocal()
     try:
-        # Отправляем обновлённый список угроз (анализированных логов)
         logs = (
             db.query(LogAnalysis)
             .filter_by(company_id=company_id)
             .order_by(LogAnalysis.id.desc())
-            .limit(50)  # лимит можно поменять
+            .limit(50)
             .all()
         )
         logs_out = [LogAnalysisOut.from_orm(l).dict() for l in logs]
@@ -166,7 +158,7 @@ async def notify_threats_update(company_id: str):
                 await ws.send_text(json.dumps(message, default=str))
             except Exception as e:
                 print("WS send error:", e)
-                remove_threats_connection(company_id, ws)  # удаляем мёртвые соединения
+                remove_threats_connection(company_id, ws)
     finally:
         db.close()
 
@@ -257,7 +249,6 @@ async def notify_analytics_update(company_id: str):
         if city_reader: city_reader.close()
         if asn_reader: asn_reader.close()
 
-        # --- /analytics/severity ---
         windows_counter = Counter()
         syslog_counter = Counter()
         for log in logs:
@@ -270,7 +261,6 @@ async def notify_analytics_update(company_id: str):
             "syslog": dict(syslog_counter)
         }
 
-        # --- /analytics/summary ---
         types = Counter([log.attack_type for log in logs])
         risks = {"low": 0, "medium": 0, "high": 0}
         mitre = Counter([log.mitre_id for log in logs if log.mitre_id])
@@ -286,7 +276,6 @@ async def notify_analytics_update(company_id: str):
         attack_types = dict(types)
         risk_levels = risks
 
-        # --- Формируем сообщение ---
         message = {
             "type": "analytics_update",
             "activity": activity,

@@ -7,6 +7,7 @@ from backend.utils.ws_manager import (
     add_analytics_connection, remove_analytics_connection,
     add_threats_connection, remove_threats_connection
 )
+import json
 
 router = APIRouter(prefix="/ws", tags=["WebSocket"])
 
@@ -20,8 +21,13 @@ async def dashboard_ws(websocket: WebSocket):
 
     try:
         while True:
-            await asyncio.sleep(60)  # Просто держим соединение открытым
+            # Отправляем ping-сообщение клиенту
+            await websocket.send_text(json.dumps({"type": "ping"}))
+            await asyncio.sleep(20)  # Пинг каждые 20 секунд
     except WebSocketDisconnect:
+        remove_connection(company_id, websocket)
+    except Exception as e:
+        print("WS error (dashboard):", e)
         remove_connection(company_id, websocket)
 
 @router.websocket("/threats")
@@ -34,11 +40,12 @@ async def ws_threats(websocket: WebSocket):
     add_threats_connection(company_id, websocket)
     try:
         while True:
-            await asyncio.sleep(60)  # Просто держим соединение открытым
+            await websocket.send_text(json.dumps({"type": "ping"}))
+            await asyncio.sleep(20)  # Пинг каждые 20 секунд
     except WebSocketDisconnect:
         remove_threats_connection(company_id, websocket)
     except Exception as e:
-        print("WS error:", e)
+        print("WS error (threats):", e)
         remove_threats_connection(company_id, websocket)
 
 @router.websocket("/analytics")
@@ -50,7 +57,8 @@ async def analytics_ws(websocket: WebSocket):
     add_analytics_connection(company_id, websocket)
     try:
         while True:
-            await asyncio.sleep(60)
+            await websocket.send_text(json.dumps({"type": "ping"}))
+            await asyncio.sleep(20)  # Пинг каждые 20 секунд
     except WebSocketDisconnect:
         remove_analytics_connection(company_id, websocket)
     except Exception as e:
