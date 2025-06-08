@@ -109,7 +109,17 @@ function DashboardPage() {
       console.log("WS ERROR (dashboard)", e);
     };
     ws.onmessage = (event) => {
-      console.log("WS MESSAGE (dashboard):", event.data);
+      try {
+        const data = JSON.parse(event.data);
+        if (data.type === "dashboard_update") {
+          setStats(data.stats);
+          setUserCount(data.userCount);
+          setRecentLogs(data.recentLogs);
+        }
+        // ping можно игнорировать
+      } catch (e) {
+        console.error("Ошибка парсинга WS data", e);
+      }
     };
   
     return () => {
