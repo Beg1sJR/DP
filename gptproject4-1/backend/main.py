@@ -53,7 +53,7 @@ app.openapi = lambda: custom_openapi(app)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://dp-front-azure.vercel.app/"],
+    allow_origins=["https://dp-front-azure.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
