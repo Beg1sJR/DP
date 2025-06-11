@@ -286,7 +286,7 @@ def generate_report_summary(logs: list[LogAnalysis]) -> str:
         model="gpt-4o",
         messages=[{"role": "user", "content": prompt}],
         temperature=0.3,
-        max_tokens=800
+        max_tokens=2000
     )
 
     return response.choices[0].message.content.strip()
